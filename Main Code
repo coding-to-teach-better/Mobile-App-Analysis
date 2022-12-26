@@ -1,0 +1,130 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+
+df = pd.read_csv(r"C:\Users\harry\Downloads\appstore_games.csv\appstore_games.csv")
+
+print(len(df))
+
+# Build a histogram of each
+# Explore the number of NaN for each
+# Look at correlation between numerical variables? Heat Map
+# Think of how you will deal with any problems
+# get type of each 
+
+
+def explore(df):
+    NaNs = []
+    columns = []
+    for column in df.columns:
+        columns.append(column)
+        NaN = df[column].isna().sum()
+        NaNs.append(NaN)
+    nanDf = pd.DataFrame(list(zip(columns, NaNs)),
+               columns =['Name', 'NaN'])
+    nanDf = nanDf.sort_values('NaN', ascending= False)
+    return nanDf
+
+
+    
+nanDf = explore(df)
+print(nanDf)
+
+# create histogram of user ratings
+
+plt.hist(df["Average User Rating"], bins = len(df["Average User Rating"].unique()))
+
+# create histogram of price
+
+plt.hist(df["Price"], bins = len(df["Price"].unique()))
+
+# create histogram of size
+# need to put these into bins
+
+plt.hist(df["Size"], bins = 10)
+
+
+# counting the number of occurances of each genre word to get an idea of what bins would be appropriate
+
+genres = df["Genres"].unique()
+
+genreString = " ".join(genres)
+
+genreString = genreString.split()
+
+unique = []
+for word in genreString:
+    if word not in unique:
+        unique.append(word)
+
+unqiue = unique.sort()
+
+
+genresWhole = " ".join(df["Genres"])
+genresWhole = genresWhole.replace(",", "")
+
+
+words = []
+counts = []
+for word in unique:
+    word = word.replace(",","")
+    words.append(word)
+    counts.append(genresWhole.count(word))
+words.remove("Games")
+words.remove("Gaming")
+words.remove("&")
+genreCountsDf = pd.DataFrame(list(zip(words, counts)),
+               columns =['Genre', 'Count'])
+genreCountsDf = genreCountsDf.sort_values('Count', ascending= False)
+
+popular = list(genreCountsDf["Genre"][0:20])
+
+#make bins
+
+def getGenre(genre):
+    for p in popular:
+        if p in genre:
+            return p
+    else:
+        return "other"
+
+        
+
+df['genre bins'] = df['Genres'].apply(getGenre)
+    
+# create histogram of genre bins
+
+plt.hist(df["genre bins"], bins = len(df["genre bins"].unique()))
+plt.xticks(rotation = 70)  
+
+# drop columns with no Average User Rating 
+
+df = df.dropna(subset=["Average User Rating"])
+print(len(df))
+
+# build the multinomial regression model
+# evaluate multinomial logistic regression model
+# removing NaN
+
+
+from numpy import mean
+from numpy import std
+from sklearn.datasets import make_classification
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.linear_model import LogisticRegression
+
+# define dataset
+y = df["genre bins"]
+X = []
+
+for rating in df["Average User Rating"]:
+    X.append([rating])
+# define the multinomial logistic regression model
+model = LogisticRegression(multi_class='multinomial', solver='lbfgs')
+# define the model evaluation procedure
+cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
+# evaluate the model and collect the scores
+n_scores = cross_val_score(model, X, y, scoring='accuracy', cv=cv, n_jobs=-1)
+# report the model performance
+print('Mean Accuracy: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
+
