@@ -128,3 +128,47 @@ n_scores = cross_val_score(model, X, y, scoring='accuracy', cv=cv, n_jobs=-1)
 # report the model performance
 print('Mean Accuracy: %.3f (%.3f)' % (mean(n_scores), std(n_scores)))
 
+
+# building a decision tree to predict user rating from price, age rating and genre bins
+
+# maybe reduce bins in average user rating to above 3.0 and below 3.0?
+
+# should read more about decision trees and regression analysis? Try Support vector machine next?
+
+# change price to int
+
+df['Price'] = df['Price'].astype('int64')
+
+df['Average User Rating'] = df['Average User Rating'].astype('int64')
+
+# creating dict for mapping genre bins to numbers
+
+keys = list(df["genre bins"].unique())
+
+values = list(range(len(keys)))
+
+genreDict = {keys[i]: values[i] for i in range(len(keys))}
+
+df['genre bins'] = df['genre bins'].map(genreDict)
+
+# removed genre bins due to too many values
+
+features = ['Price', "Age Rating"]
+
+X = df[features]
+y = df['Average User Rating']
+
+from sklearn import tree
+from sklearn.tree import DecisionTreeClassifier
+
+dtree = DecisionTreeClassifier()
+dtree = dtree.fit(X, y)
+
+tree.plot_tree(dtree, feature_names=features)
+
+# creating prediction
+print(dtree.predict([[1,15]]))
+
+sc = dtree.score(X, y, sample_weight=None)
+
+print(" Accuracy score is", sc)
